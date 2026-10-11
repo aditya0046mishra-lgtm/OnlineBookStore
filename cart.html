@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - Online Book Store</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            padding: 30px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #dbeafe, #ede9fe, #fce7f3);
+            color: #1e293b;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 25px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        }
+        h1 {
+            text-align: center;
+            color: #4338ca;
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #4338ca;
+            color: white;
+            padding: 16px 10px;
+        }
+        td {
+            padding: 16px 10px;
+            text-align: center;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+        input[type="number"] {
+            width: 65px;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            text-align: center;
+        }
+        button, .continue {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+        }
+        .remove {
+            background: #ef4444;
+            color: white;
+        }
+        .remove:hover {
+            background: #dc2626;
+        }
+        .total {
+            text-align: right;
+            font-size: 24px;
+            font-weight: bold;
+            color: #4338ca;
+            margin-top: 25px;
+        }
+       .actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        .continue {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        .clear {
+            background: #ef4444;
+            color: white;
+        }
+        .empty {
+            padding: 30px;
+            color: #64748b;
+        }
+        @media (max-width: 650px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 12px;
+                overflow-x: auto;
+            }
+            table {
+                min-width: 550px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🛒 Shopping Cart</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Book Name</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Amount</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="cartItems"></tbody>
+    </table>
+    <div class="total" id="totalAmount">Total: ₹0.00</div>
+    <div class="actions">
+        <a href="catalogue.html" class="continue">
+            Continue Shopping →
+        </a>
+        <button class="clear" onclick="clearCart()">
+            Clear Cart
+        </button>
+    </div>
+</div>
+<script>
+    function getCart() {
+        return JSON.parse(localStorage.getItem("cart")) || [];
+    }
+    function saveCart(cart) {
+        localStorage.setItem("cart", JSON.stringify(cart));
+    }
+    function formatRupees(amount) {
+        return amount.toLocaleString("en-IN", {
+            style: "currency",
+            currency: "INR"
+        });
+    }
+    function renderCart() {
+        let cart = getCart();
+        let tbody = document.getElementById("cartItems");
+        let total = 0;
+        tbody.innerHTML = "";
+        if (cart.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="empty">
+                        Your cart is empty. Please add some books!
+                    </td>
+                </tr>
+            `;
+        }
+        cart.forEach((book, index) => {
+            let amount = book.price * book.quantity;
+            total += amount;
+            let row = document.createElement("tr");
+            let nameCell = document.createElement("td");
+            nameCell.textContent = book.name;
+            let priceCell = document.createElement("td");
+            priceCell.textContent = formatRupees(book.price);
+            let quantityCell = document.createElement("td");
+            let quantityInput = document.createElement("input");
+            quantityInput.type = "number";
+            quantityInput.min = "1";
+            quantityInput.step = "1";
+            quantityInput.value = book.quantity;
+            quantityInput.addEventListener("change", function () {
+                updateQuantity(index, this.value);
+            });
+            quantityCell.appendChild(quantityInput);
+            let amountCell = document.createElement("td");
+            amountCell.textContent = formatRupees(amount);
+            let actionCell = document.createElement("td");
+            let removeButton = document.createElement("button");
+            removeButton.textContent = "Remove";
+            removeButton.className = "remove";
+            removeButton.addEventListener("click", function () {
+                removeBook(index);
+            });
+            actionCell.appendChild(removeButton);
+            row.append(
+                nameCell,
+                priceCell,
+                quantityCell,
+                amountCell,
+                actionCell
+            );
+            tbody.appendChild(row);
+        });
+        document.getElementById("totalAmount").textContent =
+            "Total: " + formatRupees(total);
+    }
+    function updateQuantity(index, value) {
+        let quantity = Number(value);
+        let cart = getCart();
+        if (!Number.isInteger(quantity) || quantity < 1) {
+            renderCart();
+            return;
+        }
+        cart[index].quantity = quantity;
+        saveCart(cart);
+        renderCart();
+    }
+    function removeBook(index) {
+        let cart = getCart();
+
+        cart.splice(index, 1);
+
+        saveCart(cart);
+        renderCart();
+    }
+    function clearCart() {
+        if (confirm("Do you want to clear your cart?")) {
+            localStorage.removeItem("cart");
+            renderCart();
+        }
+    }
+    renderCart();
+</script>
+
+</body>
+</html>
